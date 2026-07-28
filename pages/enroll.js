@@ -13,6 +13,8 @@ export default function Enroll() {
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [peekAvailable, setPeekAvailable] = useState(false);
+  const [peeking, setPeeking] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -26,6 +28,9 @@ export default function Enroll() {
       setQr(data.qrDataUrl);
       setManualKey(data.manualKey);
       setReady(true);
+
+      const peek = await fetch("/api/mfa/peek-test-only");
+      setPeekAvailable(peek.status !== 404);
     })();
   }, [router]);
 
@@ -45,6 +50,17 @@ export default function Enroll() {
       return;
     }
     router.replace({ pathname: "/backup", query: { firstRun: "1" } });
+  }
+
+  async function revealForTesting() {
+    setPeeking(true);
+    const res = await fetch("/api/mfa/peek-test-only");
+    if (res.ok) {
+      const data = await res.json();
+      const digits = data.code;
+      setCode(digits.slice(0, 3) + " " + digits.slice(3));
+    }
+    setPeeking(false);
   }
 
   if (!ready) return null;
@@ -114,6 +130,19 @@ export default function Enroll() {
           <button className="btn btn-primary" type="submit" disabled={submitting || code.replace(/\s/g, "").length !== 6}>
             {submitting ? "Checking…" : "Confirm and continue"}
           </button>
+          {peekAvailable && (
+            <button
+              type="button"
+              onClick={revealForTesting}
+              disabled={peeking}
+              style={{
+                background: "none", border: "none", color: "var(--faint)",
+                fontSize: 12, cursor: "pointer", textDecoration: "underline",
+              }}
+            >
+              {peeking ? "Fetching…" : "Reveal code (testing only — no phone app needed)"}
+            </button>
+          )}
         </form>
       </div>
     </Screen>
