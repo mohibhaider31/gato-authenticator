@@ -18,7 +18,7 @@ export default function Home() {
     (async () => {
       const me = await api("/api/auth/me");
       if (!me.data.loggedIn) return router.replace("/");
-      if (!me.data.enrolled) return router.replace("/enroll");
+      if (!me.data.enrolled) return router.replace("/setup");
       if (!me.data.unlocked) return router.replace("/lock");
       setUser(me.data.user);
       setReady(true);

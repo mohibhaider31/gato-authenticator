@@ -16,7 +16,7 @@ export default function Onboarding() {
         return;
       }
       if (!data.hasPin && !data.hasWebauthn) return router.replace("/setup");
-      if (!data.enrolled) return router.replace("/enroll");
+      if (!data.enrolled) return router.replace("/setup");
       if (!data.unlocked) return router.replace("/lock");
       router.replace("/home");
     })();

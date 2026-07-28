@@ -19,7 +19,10 @@ export default function Setup() {
       const { data } = await api("/api/auth/me");
       if (!data.loggedIn) return router.replace("/");
       if (data.hasPin || data.hasWebauthn) {
-        if (!data.enrolled) return router.replace("/enroll");
+        if (!data.enrolled) {
+          await api("/api/mfa/auto-enroll", { body: {} });
+          return router.replace({ pathname: "/backup", query: { firstRun: "1" } });
+        }
         return router.replace(data.unlocked ? "/home" : "/lock");
       }
       setReady(true);
@@ -41,6 +44,11 @@ export default function Setup() {
     setStage("biometric");
   }
 
+  async function finishSetup() {
+    await api("/api/mfa/auto-enroll", { body: {} });
+    router.replace({ pathname: "/backup", query: { firstRun: "1" } });
+  }
+
   async function setupBiometric() {
     setBioBusy(true);
     setError("");
@@ -53,7 +61,7 @@ export default function Setup() {
         setBioBusy(false);
         return;
       }
-      router.replace("/enroll");
+      await finishSetup();
     } catch (err) {
       setError("Biometric setup was cancelled or isn't available on this browser.");
       setBioBusy(false);
@@ -127,7 +135,7 @@ export default function Setup() {
                   {bioBusy ? "Waiting for confirmation…" : "Set up biometric unlock"}
                 </button>
               )}
-              <button className="btn btn-secondary" onClick={() => router.replace("/enroll")}>
+              <button className="btn btn-secondary" onClick={finishSetup}>
                 Skip for now — use PIN only
               </button>
             </div>

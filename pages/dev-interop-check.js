@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { api } from "../lib/client";
 import Screen, { Logo } from "../components/Screen";
 
-export default function Enroll() {
+export default function DevInteropCheck() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [qr, setQr] = useState(null);
@@ -70,10 +70,11 @@ export default function Enroll() {
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <Logo size={44} />
         <div>
-          <h1 style={{ font: "800 22px 'Source Sans 3'", margin: 0 }}>Set up GATO Authenticator</h1>
+          <h1 style={{ font: "800 22px 'Source Sans 3'", margin: 0 }}>Interop check (internal)</h1>
           <p style={{ color: "var(--muted)", marginTop: 8, fontSize: 14, lineHeight: 1.5 }}>
-            Scan this with your phone's authenticator app (or this one, on another device), then
-            enter the 6-digit code it shows to confirm.
+            Not part of the normal sign-in flow — real users never see this. Use it to confirm
+            the TOTP implementation is standards-compliant by scanning with an existing
+            authenticator app (Microsoft, Google) and checking the code matches.
           </p>
         </div>
 
