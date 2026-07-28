@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "missing_code" });
   }
 
-  const valid = verifyCode(session.mfa.secret, code.trim());
+  const valid = verifyCode(session.mfa.secret, code.replace(/\s+/g, ""));
   if (!valid) {
     return res.status(200).json({ valid: false });
   }
