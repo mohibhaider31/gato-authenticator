@@ -1,31 +1,27 @@
 import { generateRegistrationOptions } from "@simplewebauthn/server";
-import { getSession } from "../../../lib/session";
+import { getAuthContext } from "../../../lib/authContext";
 import { getRpConfig } from "../../../lib/webauthn";
+import { signChallenge } from "../../../lib/challengeToken";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const session = await getSession(req, res);
-  if (!session.user) return res.status(401).json({ error: "not_logged_in" });
+  const ctx = await getAuthContext(req, res);
+  if (!ctx.user) return res.status(401).json({ error: "not_logged_in" });
 
   const { rpID, rpName } = getRpConfig(req);
 
   const options = await generateRegistrationOptions({
     rpName,
     rpID,
-    userName: session.user.email,
-    userDisplayName: session.user.name,
+    userName: ctx.user.email,
+    userDisplayName: ctx.user.name,
     attestationType: "none",
     authenticatorSelection: {
-      // Requires an on-device platform authenticator — Face ID, Touch ID,
-      // Windows Hello — not a roaming security key, matching "biometric lock".
       authenticatorAttachment: "platform",
       userVerification: "required",
       residentKey: "preferred",
     },
   });
 
-  session.webauthnChallenge = options.challenge;
-  await session.save();
-
-  res.status(200).json(options);
+  res.status(200).json({ ...options, challengeToken: signChallenge(options.challenge) });
 }

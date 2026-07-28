@@ -1,25 +1,32 @@
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
-import { getSession } from "../../../lib/session";
+import { getAuthContext } from "../../../lib/authContext";
 import { getRpConfig } from "../../../lib/webauthn";
-import { getDeviceIdFromReq } from "../../../lib/deviceCookie";
+import { verifyChallengeToken } from "../../../lib/challengeToken";
 import { getDevice, updateWebauthnCounter, touchLastUsed } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const session = await getSession(req, res);
-  if (!session.user) return res.status(401).json({ error: "not_logged_in" });
-  if (!session.webauthnChallenge) return res.status(400).json({ error: "no_pending_challenge" });
+  const ctx = await getAuthContext(req, res);
+  if (!ctx.user) return res.status(401).json({ error: "not_logged_in" });
 
-  const deviceId = getDeviceIdFromReq(req);
-  const device = deviceId ? await getDevice(session.user.email, deviceId) : null;
+  const device = ctx.deviceId ? await getDevice(ctx.user.email, ctx.deviceId) : null;
   if (!device?.webauthn_credential_id) return res.status(400).json({ error: "no_credential" });
+
+  const { response, challengeToken } = req.body || {};
+  const expectedChallenge = response?.response?.clientDataJSON
+    ? JSON.parse(Buffer.from(response.response.clientDataJSON, "base64").toString()).challenge
+    : null;
+
+  if (!verifyChallengeToken(challengeToken, expectedChallenge)) {
+    return res.status(400).json({ verified: false, error: "invalid_or_expired_challenge" });
+  }
 
   const { rpID, rpOrigin } = getRpConfig(req);
 
   try {
     const verification = await verifyAuthenticationResponse({
-      response: req.body,
-      expectedChallenge: session.webauthnChallenge,
+      response,
+      expectedChallenge,
       expectedOrigin: rpOrigin,
       expectedRPID: rpID,
       credential: {
@@ -29,17 +36,13 @@ export default async function handler(req, res) {
       },
     });
 
-    session.webauthnChallenge = undefined;
-
     if (verification.verified) {
-      await updateWebauthnCounter(deviceId, verification.authenticationInfo.newCounter);
-      await touchLastUsed(deviceId);
-      session.unlocked = true;
-      await session.save();
-      return res.status(200).json({ verified: true });
+      await updateWebauthnCounter(ctx.deviceId, verification.authenticationInfo.newCounter);
+      await touchLastUsed(ctx.deviceId);
+      const sessionToken = await ctx.persist({ unlocked: true });
+      return res.status(200).json({ verified: true, sessionToken });
     }
 
-    await session.save();
     res.status(200).json({ verified: false });
   } catch (err) {
     res.status(400).json({ verified: false, error: err.message });

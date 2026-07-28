@@ -1,23 +1,20 @@
-import { getSession } from "../../../lib/session";
-import { getDeviceIdFromReq } from "../../../lib/deviceCookie";
+import { getAuthContext } from "../../../lib/authContext";
 import { listDevices, revokeDevice, revokeAllExcept } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
-  const session = await getSession(req, res);
-  if (!session.user) return res.status(401).json({ error: "not_logged_in" });
-  if (!session.unlocked) return res.status(403).json({ error: "locked" });
-
-  const thisDeviceId = getDeviceIdFromReq(req);
+  const ctx = await getAuthContext(req, res);
+  if (!ctx.user) return res.status(401).json({ error: "not_logged_in" });
+  if (!ctx.unlocked) return res.status(403).json({ error: "locked" });
 
   if (req.method === "GET") {
-    const rows = await listDevices(session.user.email);
+    const rows = await listDevices(ctx.user.email);
     const devices = rows.map((d) => ({
       id: d.id,
       name: d.name,
       platform: d.platform,
       createdAt: d.created_at,
       lastUsedAt: d.last_used_at,
-      current: d.device_id === thisDeviceId,
+      current: d.device_id === ctx.deviceId,
     }));
     return res.status(200).json({ devices });
   }
@@ -25,11 +22,11 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const { action, deviceRowId } = req.body || {};
     if (action === "revoke" && deviceRowId) {
-      await revokeDevice(session.user.email, deviceRowId);
+      await revokeDevice(ctx.user.email, deviceRowId);
       return res.status(200).json({ ok: true });
     }
     if (action === "revokeAllOthers") {
-      await revokeAllExcept(session.user.email, thisDeviceId);
+      await revokeAllExcept(ctx.user.email, ctx.deviceId);
       return res.status(200).json({ ok: true });
     }
     return res.status(400).json({ error: "unknown_action" });

@@ -1,23 +1,21 @@
-import { getSession } from "../../../lib/session";
-import { getDeviceIdFromReq } from "../../../lib/deviceCookie";
+import { getAuthContext } from "../../../lib/authContext";
 import { getDevice } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
-  const session = await getSession(req, res);
-  const deviceId = getDeviceIdFromReq(req);
+  const ctx = await getAuthContext(req, res);
 
   let device = null;
-  if (session.user && deviceId) {
-    device = await getDevice(session.user.email, deviceId);
+  if (ctx.user && ctx.deviceId) {
+    device = await getDevice(ctx.user.email, ctx.deviceId);
   }
 
   res.status(200).json({
-    loggedIn: !!session.user,
-    user: session.user || null,
+    loggedIn: !!ctx.user,
+    user: ctx.user,
     hasPin: !!device?.pin_hash,
     hasWebauthn: !!device?.webauthn_credential_id,
     enrolled: !!device,
-    unlocked: !!session.unlocked,
+    unlocked: ctx.unlocked,
     rememberDays: device?.remember_days ?? 14,
     hideCodes: device?.hide_codes ?? false,
     appearance: device?.appearance ?? "dark",

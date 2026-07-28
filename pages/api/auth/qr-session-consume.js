@@ -1,4 +1,4 @@
-import { getSession } from "../../../lib/session";
+import { getAuthContext } from "../../../lib/authContext";
 import { verifyQrLoginToken } from "../../../lib/qrToken";
 import { getDeviceIdFromReq, setDeviceIdCookie } from "../../../lib/deviceCookie";
 import { newDeviceId } from "../../../lib/deviceStore";
@@ -10,13 +10,12 @@ export default async function handler(req, res) {
   const user = verifyQrLoginToken(token);
   if (!user) return res.status(400).json({ ok: false, error: "invalid_or_expired" });
 
-  const session = await getSession(req, res);
-  session.user = user;
-  await session.save();
+  const ctx = await getAuthContext(req, res);
+  const sessionToken = await ctx.persist({ user });
 
-  if (!getDeviceIdFromReq(req)) {
+  if (!ctx.isMobile && !getDeviceIdFromReq(req)) {
     setDeviceIdCookie(res, newDeviceId());
   }
 
-  res.status(200).json({ ok: true, user });
+  res.status(200).json({ ok: true, user, sessionToken });
 }

@@ -1,25 +1,23 @@
 import bcrypt from "bcryptjs";
-import { getSession } from "../../../lib/session";
-import { getDeviceIdFromReq } from "../../../lib/deviceCookie";
+import { getAuthContext } from "../../../lib/authContext";
 import { getDevice, touchLastUsed } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-  const session = await getSession(req, res);
-  if (!session.user) return res.status(401).json({ error: "not_logged_in" });
+  const ctx = await getAuthContext(req, res);
+  if (!ctx.user) return res.status(401).json({ error: "not_logged_in" });
 
-  const deviceId = getDeviceIdFromReq(req);
-  const device = deviceId ? await getDevice(session.user.email, deviceId) : null;
+  const device = ctx.deviceId ? await getDevice(ctx.user.email, ctx.deviceId) : null;
   if (!device?.pin_hash) return res.status(400).json({ error: "no_pin_set" });
 
   const { pin } = req.body || {};
   const ok = !!pin && bcrypt.compareSync(pin, device.pin_hash);
 
+  let sessionToken = null;
   if (ok) {
-    session.unlocked = true;
-    await session.save();
-    await touchLastUsed(deviceId);
+    sessionToken = await ctx.persist({ unlocked: true });
+    await touchLastUsed(ctx.deviceId);
   }
 
-  res.status(200).json({ ok });
+  res.status(200).json({ ok, sessionToken });
 }

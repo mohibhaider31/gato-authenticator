@@ -51,7 +51,9 @@ export default function Setup() {
     try {
       const { data: options } = await api("/api/webauthn/register-options", { body: {} });
       const attResp = await startRegistration({ optionsJSON: options });
-      const { data } = await api("/api/webauthn/register-verify", { body: attResp });
+      const { data } = await api("/api/webauthn/register-verify", {
+        body: { response: attResp, challengeToken: options.challengeToken },
+      });
       if (!data.verified) {
         setError("Couldn't verify that. Your PIN still works as usual.");
         setBioBusy(false);

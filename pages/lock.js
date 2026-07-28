@@ -36,7 +36,9 @@ export default function Lock() {
     try {
       const { data: options } = await api("/api/webauthn/auth-options", { body: {} });
       const assertion = await startAuthentication({ optionsJSON: options });
-      const { data } = await api("/api/webauthn/auth-verify", { body: assertion });
+      const { data } = await api("/api/webauthn/auth-verify", {
+        body: { response: assertion, challengeToken: options.challengeToken },
+      });
       if (data.verified) return router.replace("/home");
       setError("Couldn't verify. Try again or use your PIN.");
     } catch {
