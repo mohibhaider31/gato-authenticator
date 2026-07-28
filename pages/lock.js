@@ -56,6 +56,11 @@ export default function Lock() {
     setTimeout(() => setShake(false), 400);
   }
 
+  async function signOut() {
+    await api("/api/auth/logout", { body: {} });
+    router.replace("/");
+  }
+
   if (!ready) return null;
 
   return (
@@ -108,6 +113,13 @@ export default function Lock() {
             )}
           </form>
         )}
+
+        <button
+          onClick={signOut}
+          style={{ background: "none", border: "none", color: "var(--faint)", fontSize: 12.5, cursor: "pointer", marginTop: 4 }}
+        >
+          Not you, or forgot your PIN? Sign out
+        </button>
       </div>
     </Screen>
   );
