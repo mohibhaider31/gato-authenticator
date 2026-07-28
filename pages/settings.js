@@ -57,6 +57,7 @@ export default function Settings() {
           <Row label="App lock" value="Required — PIN always on" />
           <Row label="Biometric unlock" value={hasWebauthn ? "Enabled" : "Not set up"} />
           <NavRow label="Backup codes" onClick={() => router.push("/backup")} />
+          <NavRow label="View code in another app (for demos)" onClick={() => router.push("/view-in-app")} />
         </section>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
