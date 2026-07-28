@@ -1,5 +1,5 @@
 import { getAuthContext } from "../../../lib/authContext";
-import { redeemBackupCode } from "../../../lib/deviceStore";
+import { redeemBackupCode, setUnlockedAt } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -11,7 +11,10 @@ export default async function handler(req, res) {
 
   const ok = await redeemBackupCode(ctx.user.email, code.trim().toUpperCase());
   let sessionToken = null;
-  if (ok) sessionToken = await ctx.persist({ unlocked: true });
+  if (ok) {
+    sessionToken = await ctx.persist({ unlocked: true });
+    if (ctx.deviceId) await setUnlockedAt(ctx.deviceId, new Date());
+  }
 
   res.status(200).json({ ok, sessionToken });
 }

@@ -1,5 +1,5 @@
 import { getAuthContext } from "../../../lib/authContext";
-import { getDevice, touchLastUsed } from "../../../lib/deviceStore";
+import { getDevice, touchLastUsed, setUnlockedAt } from "../../../lib/deviceStore";
 
 // For native clients only: unlocks the session after a LOCAL biometric/OS
 // passcode check has already happened on-device (see the mobile app's
@@ -17,6 +17,7 @@ export default async function handler(req, res) {
   if (!device) return res.status(400).json({ error: "not_enrolled" });
 
   await touchLastUsed(ctx.deviceId);
+  await setUnlockedAt(ctx.deviceId, new Date());
   const sessionToken = await ctx.persist({ unlocked: true });
   res.status(200).json({ ok: true, sessionToken });
 }

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { getAuthContext } from "../../../lib/authContext";
-import { getDevice, touchLastUsed } from "../../../lib/deviceStore";
+import { getDevice, touchLastUsed, setUnlockedAt } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -17,6 +17,7 @@ export default async function handler(req, res) {
   if (ok) {
     sessionToken = await ctx.persist({ unlocked: true });
     await touchLastUsed(ctx.deviceId);
+    await setUnlockedAt(ctx.deviceId, new Date());
   }
 
   res.status(200).json({ ok, sessionToken });

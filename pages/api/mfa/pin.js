@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { getAuthContext } from "../../../lib/authContext";
 import {
-  getDevice, createDevice, setPin, detectPlatform, friendlyDeviceName,
+  getDevice, createDevice, setPin, setUnlockedAt, detectPlatform, friendlyDeviceName,
   listBackupCodes, generateAndStoreBackupCodes,
 } from "../../../lib/deviceStore";
 import { generateSecret, generateBackupCodes } from "../../../lib/totp";
@@ -43,6 +43,7 @@ export default async function handler(req, res) {
   }
 
   await setPin(ctx.deviceId, bcrypt.hashSync(pin, 10));
+  await setUnlockedAt(ctx.deviceId, new Date());
   const sessionToken = await ctx.persist({ unlocked: true });
 
   res.status(200).json({ ok: true, sessionToken });

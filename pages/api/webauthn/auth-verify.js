@@ -2,7 +2,7 @@ import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { getAuthContext } from "../../../lib/authContext";
 import { getRpConfig } from "../../../lib/webauthn";
 import { verifyChallengeToken } from "../../../lib/challengeToken";
-import { getDevice, updateWebauthnCounter, touchLastUsed } from "../../../lib/deviceStore";
+import { getDevice, updateWebauthnCounter, touchLastUsed, setUnlockedAt } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -39,6 +39,7 @@ export default async function handler(req, res) {
     if (verification.verified) {
       await updateWebauthnCounter(ctx.deviceId, verification.authenticationInfo.newCounter);
       await touchLastUsed(ctx.deviceId);
+      await setUnlockedAt(ctx.deviceId, new Date());
       const sessionToken = await ctx.persist({ unlocked: true });
       return res.status(200).json({ verified: true, sessionToken });
     }

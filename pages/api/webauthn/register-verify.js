@@ -2,7 +2,7 @@ import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { getAuthContext } from "../../../lib/authContext";
 import { getRpConfig } from "../../../lib/webauthn";
 import { verifyChallengeToken } from "../../../lib/challengeToken";
-import { setWebauthn } from "../../../lib/deviceStore";
+import { setWebauthn, setUnlockedAt } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -40,6 +40,7 @@ export default async function handler(req, res) {
       counter: credential.counter,
     });
 
+    await setUnlockedAt(ctx.deviceId, new Date());
     const sessionToken = await ctx.persist({ unlocked: true });
     res.status(200).json({ verified: true, sessionToken });
   } catch (err) {
