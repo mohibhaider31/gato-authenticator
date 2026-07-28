@@ -1,5 +1,7 @@
 import { getSession } from "../../../lib/session";
 import { verifyQrLoginToken } from "../../../lib/qrToken";
+import { getDeviceIdFromReq, setDeviceIdCookie } from "../../../lib/deviceCookie";
+import { newDeviceId } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
@@ -11,6 +13,10 @@ export default async function handler(req, res) {
   const session = await getSession(req, res);
   session.user = user;
   await session.save();
+
+  if (!getDeviceIdFromReq(req)) {
+    setDeviceIdCookie(res, newDeviceId());
+  }
 
   res.status(200).json({ ok: true, user });
 }

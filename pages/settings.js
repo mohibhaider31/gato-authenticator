@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "../lib/client";
 import Screen, { Toast } from "../components/Screen";
+import TabBar from "../components/TabBar";
 
 export default function Settings() {
   const router = useRouter();
@@ -91,6 +92,7 @@ export default function Settings() {
           <button className="btn btn-danger" onClick={signOut}>Sign out</button>
         </section>
       </div>
+      <TabBar active="settings" />
       <Toast message={toast} />
     </Screen>
   );

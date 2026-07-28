@@ -1,12 +1,17 @@
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { getSession } from "../../../lib/session";
 import { getRpConfig } from "../../../lib/webauthn";
+import { getDeviceIdFromReq } from "../../../lib/deviceCookie";
+import { setWebauthn } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const session = await getSession(req, res);
   if (!session.user) return res.status(401).json({ error: "not_logged_in" });
   if (!session.webauthnChallenge) return res.status(400).json({ error: "no_pending_challenge" });
+
+  const deviceId = getDeviceIdFromReq(req);
+  if (!deviceId) return res.status(400).json({ error: "no_device" });
 
   const { rpID, rpOrigin } = getRpConfig(req);
 
@@ -23,9 +28,12 @@ export default async function handler(req, res) {
     }
 
     const { credential } = verification.registrationInfo;
-    session.webauthnCredentialId = credential.id;
-    session.webauthnPublicKey = Buffer.from(credential.publicKey).toString("base64url");
-    session.webauthnCounter = credential.counter;
+    await setWebauthn(deviceId, {
+      credentialId: credential.id,
+      publicKey: Buffer.from(credential.publicKey).toString("base64url"),
+      counter: credential.counter,
+    });
+
     session.webauthnChallenge = undefined;
     session.unlocked = true;
     await session.save();

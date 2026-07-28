@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "../lib/client";
 import Screen, { Logo, Toast } from "../components/Screen";
+import TabBar from "../components/TabBar";
 
 const CIRC = 2 * Math.PI * 26;
 
@@ -124,6 +125,7 @@ export default function Home() {
           <NavRow label="Backup codes" onClick={() => router.push("/backup")} />
           <NavRow label="Settings" onClick={() => router.push("/settings")} />
         </div>
+        <TabBar active="home" />
       </div>
       <Toast message={toast} />
     </Screen>

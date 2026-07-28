@@ -1,14 +1,18 @@
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { getSession } from "../../../lib/session";
 import { getRpConfig } from "../../../lib/webauthn";
+import { getDeviceIdFromReq } from "../../../lib/deviceCookie";
+import { getDevice, updateWebauthnCounter, touchLastUsed } from "../../../lib/deviceStore";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
   const session = await getSession(req, res);
   if (!session.user) return res.status(401).json({ error: "not_logged_in" });
-  if (!session.webauthnChallenge || !session.webauthnCredentialId) {
-    return res.status(400).json({ error: "no_pending_challenge" });
-  }
+  if (!session.webauthnChallenge) return res.status(400).json({ error: "no_pending_challenge" });
+
+  const deviceId = getDeviceIdFromReq(req);
+  const device = deviceId ? await getDevice(session.user.email, deviceId) : null;
+  if (!device?.webauthn_credential_id) return res.status(400).json({ error: "no_credential" });
 
   const { rpID, rpOrigin } = getRpConfig(req);
 
@@ -19,16 +23,17 @@ export default async function handler(req, res) {
       expectedOrigin: rpOrigin,
       expectedRPID: rpID,
       credential: {
-        id: session.webauthnCredentialId,
-        publicKey: Buffer.from(session.webauthnPublicKey, "base64url"),
-        counter: session.webauthnCounter || 0,
+        id: device.webauthn_credential_id,
+        publicKey: Buffer.from(device.webauthn_public_key, "base64url"),
+        counter: device.webauthn_counter || 0,
       },
     });
 
     session.webauthnChallenge = undefined;
 
     if (verification.verified) {
-      session.webauthnCounter = verification.authenticationInfo.newCounter;
+      await updateWebauthnCounter(deviceId, verification.authenticationInfo.newCounter);
+      await touchLastUsed(deviceId);
       session.unlocked = true;
       await session.save();
       return res.status(200).json({ verified: true });

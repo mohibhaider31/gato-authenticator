@@ -1,4 +1,6 @@
 import { getSession } from "../../../lib/session";
+import { getDeviceIdFromReq, setDeviceIdCookie } from "../../../lib/deviceCookie";
+import { newDeviceId } from "../../../lib/deviceStore";
 
 // This stands in for the real flow: in production, this route is replaced by
 // a redirect to CIS's actual SSO/OAuth endpoint, and this handler becomes the
@@ -13,6 +15,10 @@ export default async function handler(req, res) {
     name: "Mohib Kazmi",
   };
   await session.save();
+
+  if (!getDeviceIdFromReq(req)) {
+    setDeviceIdCookie(res, newDeviceId());
+  }
 
   res.status(200).json({ user: session.user });
 }

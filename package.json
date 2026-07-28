@@ -17,6 +17,7 @@
     "bcryptjs": "2.4.3",
     "@simplewebauthn/server": "13.3.2",
     "@simplewebauthn/browser": "13.3.0",
-    "jsqr": "1.4.0"
+    "jsqr": "1.4.0",
+    "pg": "8.22.0"
   }
 }

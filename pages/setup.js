@@ -19,10 +19,7 @@ export default function Setup() {
       const { data } = await api("/api/auth/me");
       if (!data.loggedIn) return router.replace("/");
       if (data.hasPin || data.hasWebauthn) {
-        if (!data.enrolled) {
-          await api("/api/mfa/auto-enroll", { body: {} });
-          return router.replace({ pathname: "/backup", query: { firstRun: "1" } });
-        }
+        if (!data.enrolled) return router.replace("/");
         return router.replace(data.unlocked ? "/home" : "/lock");
       }
       setReady(true);
@@ -45,7 +42,6 @@ export default function Setup() {
   }
 
   async function finishSetup() {
-    await api("/api/mfa/auto-enroll", { body: {} });
     router.replace({ pathname: "/backup", query: { firstRun: "1" } });
   }
 

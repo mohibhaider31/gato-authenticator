@@ -1,5 +1,7 @@
 import QRCode from "qrcode";
 import { getSession } from "../../../lib/session";
+import { getDeviceIdFromReq } from "../../../lib/deviceCookie";
+import { getDevice } from "../../../lib/deviceStore";
 import { otpauthUrl } from "../../../lib/totp";
 
 // Re-exposes the ALREADY-enrolled secret's QR/manual key so it can be shown
@@ -9,11 +11,14 @@ import { otpauthUrl } from "../../../lib/totp";
 export default async function handler(req, res) {
   const session = await getSession(req, res);
   if (!session.user) return res.status(401).json({ error: "not_logged_in" });
-  if (!session.mfa?.enrolled) return res.status(400).json({ error: "not_enrolled" });
+
+  const deviceId = getDeviceIdFromReq(req);
+  const device = deviceId ? await getDevice(session.user.email, deviceId) : null;
+  if (!device) return res.status(400).json({ error: "not_enrolled" });
   if (!session.unlocked) return res.status(403).json({ error: "locked" });
 
   const url = otpauthUrl({
-    secret: session.mfa.secret,
+    secret: device.secret,
     accountName: session.user.email,
     issuer: "GATO Systems",
   });
@@ -24,5 +29,5 @@ export default async function handler(req, res) {
     width: 320,
   });
 
-  res.status(200).json({ manualKey: session.mfa.secret, qrDataUrl });
+  res.status(200).json({ manualKey: device.secret, qrDataUrl });
 }
