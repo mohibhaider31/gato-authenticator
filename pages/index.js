@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { api } from "../lib/client";
 import Screen, { Logo } from "../components/Screen";
+import QrScanner from "../components/QrScanner";
 
 export default function Onboarding() {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -27,6 +30,29 @@ export default function Onboarding() {
     // In production this becomes a redirect to CIS's real SSO endpoint.
     await api("/api/auth/login", { body: {} });
     router.replace("/setup");
+  }
+
+  async function afterLogin() {
+    const { data } = await api("/api/auth/me");
+    if (!data.hasPin && !data.hasWebauthn) return router.replace("/setup");
+    if (!data.enrolled) return router.replace("/setup");
+    router.replace(data.unlocked ? "/home" : "/lock");
+  }
+
+  async function handleScanResult(text) {
+    setScanning(false);
+    setScanError("");
+    const res = await fetch("/api/auth/qr-session-consume", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: text }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      setScanError("That code didn't work — it may have expired. Try refreshing the QR and scanning again.");
+      return;
+    }
+    afterLogin();
   }
 
   if (checking) return null;
@@ -62,11 +88,16 @@ export default function Onboarding() {
           <button className="btn btn-primary" onClick={continueWithSso} disabled={loading}>
             {loading ? "Connecting…" : "Continue with GATO SSO"}
           </button>
+          <button className="btn btn-secondary" onClick={() => setScanning(true)}>
+            Scan QR to sign in
+          </button>
+          {scanError && <div style={{ color: "var(--danger)", fontSize: 13 }}>{scanError}</div>}
           <p style={{ color: "var(--dim)", fontSize: 12, textAlign: "center", margin: 0 }}>
-            On a phone? Scan the QR code shown on your GATO Systems sign-in page instead.
+            Already signed in on a computer? Scan the code from your GATO Systems sign-in page.
           </p>
         </div>
       </div>
+      {scanning && <QrScanner onResult={handleScanResult} onClose={() => setScanning(false)} />}
     </Screen>
   );
 }
