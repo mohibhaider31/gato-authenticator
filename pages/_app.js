@@ -1,7 +1,17 @@
 import "../styles/globals.css";
+import { useEffect } from "react";
 import Head from "next/head";
 
 export default function App({ Component, pageProps }) {
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        document.documentElement.setAttribute("data-theme", data.appearance || "dark");
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <>
       <Head>

@@ -20,6 +20,11 @@ CREATE TABLE IF NOT EXISTS devices (
 );
 CREATE INDEX IF NOT EXISTS idx_devices_user_email ON devices(user_email) WHERE revoked_at IS NULL;
 
+-- Added after initial migration — IF NOT EXISTS makes this safe to re-run
+-- against a database that already has the original devices table.
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS hide_codes BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS appearance TEXT NOT NULL DEFAULT 'dark';
+
 -- Backup codes are account-level recovery, not per-device — they exist to
 -- recover the account when every enrolled device is lost, per the original
 -- PRD (7.4).

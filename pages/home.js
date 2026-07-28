@@ -13,6 +13,8 @@ export default function Home() {
   const [remaining, setRemaining] = useState(30);
   const [toast, setToast] = useState("");
   const [user, setUser] = useState(null);
+  const [hideCodes, setHideCodes] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const timer = useRef(null);
 
   useEffect(() => {
@@ -22,6 +24,7 @@ export default function Home() {
       if (!me.data.enrolled) return router.replace("/setup");
       if (!me.data.unlocked) return router.replace("/lock");
       setUser(me.data.user);
+      setHideCodes(me.data.hideCodes);
       setReady(true);
     })();
   }, [router]);
@@ -106,15 +109,20 @@ export default function Home() {
 
           <button
             className="mono"
-            onClick={copyCode}
+            onClick={hideCodes && !revealed ? () => setRevealed(true) : copyCode}
             style={{
               background: "none", border: "none", cursor: "pointer",
               font: "700 40px 'Source Code Pro'", color: "var(--ink)", letterSpacing: 3,
+              filter: hideCodes && !revealed ? "blur(10px)" : "none",
+              transition: "filter .15s",
             }}
-            aria-label="Tap to copy code"
+            aria-label={hideCodes && !revealed ? "Tap to reveal code" : "Tap to copy code"}
           >
             {code}
           </button>
+          {hideCodes && !revealed && (
+            <div style={{ color: "var(--faint)", fontSize: 12, marginTop: -8 }}>Tap to reveal</div>
+          )}
 
           <button className="btn btn-primary" onClick={copyCode} style={{ maxWidth: 200 }}>
             Copy code

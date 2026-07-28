@@ -9,7 +9,9 @@ export default function Lock() {
   const [ready, setReady] = useState(false);
   const [hasWebauthn, setHasWebauthn] = useState(false);
   const [usePin, setUsePin] = useState(false);
+  const [useBackup, setUseBackup] = useState(false);
   const [pin, setPin] = useState("");
+  const [backupCode, setBackupCode] = useState("");
   const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -56,6 +58,19 @@ export default function Lock() {
     setTimeout(() => setShake(false), 400);
   }
 
+  async function submitBackupCode(e) {
+    e.preventDefault();
+    if (!backupCode.trim()) return;
+    setBusy(true);
+    const { data } = await api("/api/mfa/redeem-backup-code", { body: { code: backupCode } });
+    if (data.ok) return router.replace("/home");
+    setError("That backup code isn't valid or was already used.");
+    setShake(true);
+    setBackupCode("");
+    setBusy(false);
+    setTimeout(() => setShake(false), 400);
+  }
+
   async function signOut() {
     await api("/api/auth/logout", { body: {} });
     router.replace("/");
@@ -74,7 +89,28 @@ export default function Lock() {
 
         {error && <div style={{ color: "var(--danger)", fontSize: 13 }}>{error}</div>}
 
-        {!usePin ? (
+        {useBackup ? (
+          <form onSubmit={submitBackupCode} className={shake ? "shake" : ""} style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+            <input
+              className="input mono"
+              style={{ fontSize: 16, letterSpacing: 2, textAlign: "center", textTransform: "uppercase" }}
+              placeholder="XXXX-XXXX"
+              value={backupCode}
+              onChange={(e) => setBackupCode(e.target.value.toUpperCase())}
+              autoFocus
+            />
+            <button className="btn btn-primary" type="submit" disabled={busy || !backupCode.trim()}>
+              Unlock with backup code
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseBackup(false)}
+              style={{ background: "none", border: "none", color: "var(--accent)", fontSize: 13, cursor: "pointer" }}
+            >
+              Back to PIN / biometrics
+            </button>
+          </form>
+        ) : !usePin ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, width: "100%" }}>
             <button className="btn btn-primary" onClick={tryBiometric} disabled={busy}>
               {busy ? "Waiting…" : "Unlock with Face ID / Touch ID"}
@@ -111,6 +147,13 @@ export default function Lock() {
                 Use biometrics instead
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => setUseBackup(true)}
+              style={{ background: "none", border: "none", color: "var(--faint)", fontSize: 12.5, cursor: "pointer" }}
+            >
+              Use a backup code instead
+            </button>
           </form>
         )}
 

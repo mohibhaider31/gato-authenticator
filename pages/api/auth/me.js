@@ -19,5 +19,7 @@ export default async function handler(req, res) {
     enrolled: !!device,
     unlocked: !!session.unlocked,
     rememberDays: device?.remember_days ?? 14,
+    hideCodes: device?.hide_codes ?? false,
+    appearance: device?.appearance ?? "dark",
   });
 }

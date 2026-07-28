@@ -20,6 +20,25 @@ html, body { margin: 0; padding: 0; }
   --chip-ink: #07120A;
 }
 
+[data-theme="light"] {
+  --bg: #EBEDF6;
+  --surface: #FFFFFF;
+  --elevated: #FFFFFF;
+  --ink: #0C0B20;
+  --muted: #4C5072;
+  --faint: #7C80A0;
+  --dim: #AAAECA;
+  --line: rgba(10,4,80,0.11);
+  --line-2: rgba(10,4,80,0.17);
+  --fill: rgba(10,4,80,0.04);
+  --field: rgba(10,4,80,0.05);
+  --accent: #022DEC;
+  --accent-weak: rgba(2,45,236,0.10);
+  --accent-line: rgba(2,45,236,0.32);
+  --danger: #E5384F;
+  --chip-ink: #FFFFFF;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
