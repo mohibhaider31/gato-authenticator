@@ -2,6 +2,7 @@ import { verifyChallengeToken } from "../../../lib/challengeToken";
 import { verifyBiometricSignature } from "../../../lib/biometricCrypto";
 import { verifyMobileToken, createMobileToken, getBearerToken } from "../../../lib/mobileToken";
 import { getDeviceByDeviceIdOnly, touchLastUsed, setUnlockedAt } from "../../../lib/deviceStore";
+import { logAuthEvent, publicKeyFingerprint } from "../../../lib/authEvents";
 
 // Stands in for calling CIS's real OAuth token introspection endpoint
 // (RFC 7662) once that integration exists. What's real here: the biometric
@@ -34,8 +35,13 @@ export default async function handler(req, res) {
 
   const device = await getDeviceByDeviceIdOnly(deviceId);
   if (!device || !device.biometric_public_key) {
+    await logAuthEvent(device?.user_email || "unknown", deviceId, "token_introspect_rejected", {
+      reason: "device_not_enrolled",
+    });
     return res.status(200).json({ active: false, deviceTrusted: false });
   }
+
+  const fingerprint = publicKeyFingerprint(device.biometric_public_key);
 
   const proven = verifyBiometricSignature({
     publicKeyBase64: device.biometric_public_key,
@@ -43,6 +49,10 @@ export default async function handler(req, res) {
     signatureBase64: signature,
   });
   if (!proven) {
+    await logAuthEvent(device.user_email, deviceId, "token_introspect_rejected", {
+      reason: "signature_invalid",
+      fingerprint,
+    });
     return res.status(401).json({ active: false, deviceTrusted: false, error: "signature_invalid" });
   }
 
@@ -56,6 +66,7 @@ export default async function handler(req, res) {
   await setUnlockedAt(deviceId, new Date());
 
   if (tokenIsActive) {
+    await logAuthEvent(device.user_email, deviceId, "token_introspect_active", { fingerprint });
     return res.status(200).json({ active: true, deviceTrusted: true, sessionToken: presentedToken });
   }
 
@@ -66,5 +77,6 @@ export default async function handler(req, res) {
     user: { email: device.user_email, name: device.user_name },
     unlocked: true,
   });
+  await logAuthEvent(device.user_email, deviceId, "token_introspect_refreshed", { fingerprint });
   res.status(200).json({ active: false, deviceTrusted: true, refreshed: true, sessionToken: freshToken });
 }

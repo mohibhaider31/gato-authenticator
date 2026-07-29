@@ -29,6 +29,20 @@ ALTER TABLE devices ADD COLUMN IF NOT EXISTS user_name TEXT;
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS biometric_public_key TEXT;
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS biometric_enrolled_at TIMESTAMPTZ;
 
+-- A visible audit trail so the crypto flow can be demoed/verified in real
+-- time: every enrollment and every token-introspection outcome gets logged
+-- here, and a web page reads it back so you can watch, from the browser,
+-- exactly what happens the moment biometric unlock fires on the phone.
+CREATE TABLE IF NOT EXISTS auth_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email TEXT NOT NULL,
+  device_id TEXT,
+  event_type TEXT NOT NULL,
+  detail JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_auth_events_user_email ON auth_events(user_email);
+
 -- Backup codes are account-level recovery, not per-device — they exist to
 -- recover the account when every enrolled device is lost, per the original
 -- PRD (7.4).

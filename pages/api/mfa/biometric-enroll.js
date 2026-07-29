@@ -6,6 +6,7 @@ import {
   listBackupCodes, generateAndStoreBackupCodes,
 } from "../../../lib/deviceStore";
 import { generateSecret, generateBackupCodes } from "../../../lib/totp";
+import { logAuthEvent, publicKeyFingerprint } from "../../../lib/authEvents";
 
 // Enrollment (first time): device generated a keypair in its secure
 // enclave/keystore, then signed the nonce we handed out to prove it holds
@@ -45,6 +46,11 @@ export default async function handler(req, res) {
   });
 
   await setBiometricPublicKey(ctx.deviceId, publicKey);
+  await logAuthEvent(ctx.user.email, ctx.deviceId, "biometric_enroll", {
+    fingerprint: publicKeyFingerprint(publicKey),
+    deviceName: name,
+    platform,
+  });
 
   const existingCodes = await listBackupCodes(ctx.user.email);
   if (existingCodes.length === 0) {

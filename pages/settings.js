@@ -81,6 +81,7 @@ export default function Settings() {
           />
           <NavRow label="Backup codes" onClick={() => router.push("/backup")} />
           <NavRow label="View code in another app (for demos)" onClick={() => router.push("/view-in-app")} />
+          <NavRow label="Security log (key fingerprints + live events)" onClick={() => router.push("/security-log")} />
         </section>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
