@@ -25,6 +25,9 @@ CREATE INDEX IF NOT EXISTS idx_devices_user_email ON devices(user_email) WHERE r
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS hide_codes BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS appearance TEXT NOT NULL DEFAULT 'dark';
 ALTER TABLE devices ADD COLUMN IF NOT EXISTS unlocked_at TIMESTAMPTZ;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS user_name TEXT;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS biometric_public_key TEXT;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS biometric_enrolled_at TIMESTAMPTZ;
 
 -- Backup codes are account-level recovery, not per-device — they exist to
 -- recover the account when every enrolled device is lost, per the original

@@ -27,6 +27,7 @@ export default async function handler(req, res) {
     const name = ctx.isMobile ? (req.headers["x-device-name"] || friendlyDeviceName(ua, platform)) : friendlyDeviceName(ua, platform);
     device = await createDevice({
       userEmail: ctx.user.email,
+      userName: ctx.user.name,
       deviceId: ctx.deviceId,
       name,
       platform,

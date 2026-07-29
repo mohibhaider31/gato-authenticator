@@ -14,6 +14,7 @@ export default async function handler(req, res) {
     user: ctx.user,
     hasPin: !!device?.pin_hash,
     hasWebauthn: !!device?.webauthn_credential_id,
+    hasBiometricKey: !!device?.biometric_public_key,
     enrolled: !!device,
     unlocked: ctx.unlocked,
     rememberDays: device?.remember_days ?? 14,
